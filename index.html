@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ArtiBot – Assistant vocal qui crée vos devis et factures BTP</title>
+  <meta name="description" content="Libérez-vous de la paperasse. ArtiBot automatise vos devis, factures et relances par simple commande vocale. Gagnez 10h par semaine.">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --primary: #986f56;
+      --accent: #6b4d3a;
+      --bg-light: #f9f5f1;
+      --bg-beige: #ffffff;
+      --white: #FFFFFF;
+      --gray: #6B7280;
+      --text-dark: #1F2937;
+      --primary-light: #b8937a;
+      --primary-dark: #7a5a45;
+    }
+
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif; line-height: 1.6; color: var(--text-dark); overflow-x: hidden; }
+
+    /* Header (logo seul à gauche, CTA à droite) */
+    header { position: relative; top: 0; width: 100%; background: rgba(255, 255, 255, 0.95); backdrop-filter: blur(10px); z-index: 1000; transition: all 0.3s ease; box-shadow: 0 2px 10px rgba(0,0,0,0.05); }
+    header.scrolled { background: rgba(255, 255, 255, 0.98); box-shadow: 0 6px 20px rgba(0,0,0,0.08); }
+    nav { max-width: 1200px; margin: 0 auto; padding: 0.3rem 1.2rem; display: grid; grid-template-columns: auto 1fr auto; gap: 1rem; align-items: center; }
+    .brand { display: flex; align-items: center; gap: 0.75rem; min-width: 0; }
+    .logo { height: 168px; object-fit: contain; display:block; }
+    .cta-button { background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; padding: 0.72rem 1.25rem; border-radius: 12px; text-decoration: none; font-weight: 700; font-size: 15px; transition: all 0.3s; display: inline-flex; align-items: center; gap: .5rem; position: relative; overflow: hidden; box-shadow: 0 4px 15px rgba(152, 111, 86, 0.3); border: 1px solid rgba(255,255,255,.15); }
+    .cta-button::before { content: ''; position: absolute; top: 0; left: -100%; width: 100%; height: 100%; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.35), transparent); transition: left 0.5s; }
+    .cta-button:hover::before { left: 100%; }
+    .cta-button:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(152, 111, 86, 0.4); }
+
+    /* Hero */
+    .hero { margin-top: 0; padding: 4rem 2rem; background: linear-gradient(135deg, var(--white) 0%, rgba(152, 111, 86, 0.05) 50%, var(--bg-light) 100%); min-height: 80vh; display: flex; align-items: center; }
+    .hero-content { max-width: 1200px; margin: 0 auto; display: grid; grid-template-columns: 1fr 1fr; gap: 4rem; align-items: center; }
+    .hero-text h1 { font-size: 3rem; line-height: 1.2; margin-bottom: 1.5rem; color: var(--text-dark); animation: fadeInUp 0.8s ease; }
+    .hero-text p { font-size: 1.25rem; color: var(--gray); margin-bottom: 2rem; animation: fadeInUp 0.8s ease 0.2s both; }
+    .hero-cta { animation: fadeInUp 0.8s ease 0.4s both; }
+
+    /* Phone Mockup */
+    .phone-mockup { position: relative; animation: fadeInUp 0.8s ease 0.6s both; will-change: transform; }
+    .phone-frame { width: 320px; height: 640px; background: #1F2937; border-radius: 40px; padding: 10px; box-shadow: 0 20px 60px rgba(0,0,0,0.3); margin: 0 auto; position: relative; cursor: pointer; }
+    .phone-screen { background: white; height: 100%; border-radius: 30px; overflow: hidden; padding: 20px; display: flex; flex-direction: column; }
+    .chat-header { background: var(--primary); color: white; padding: 15px; border-radius: 10px; margin: -20px -20px 20px -20px; text-align: center; font-weight: 600; }
+    .chat-messages { flex: 1; display: flex; flex-direction: column; gap: 15px; overflow-y: auto; }
+    .chat-examples { display: none; }
+    .chat-examples.active { display: flex; flex-direction: column; gap: 15px; }
+    .message { padding: 12px 16px; border-radius: 18px; max-width: 80%; opacity: 0; animation: slideInMessage 0.5s ease forwards; }
+    @keyframes slideInMessage { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+    .user-message { background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary) 100%); color: white; align-self: flex-end; }
+    .bot-message { background: #F3F4F6; align-self: flex-start; white-space: pre-line; }
+    .pdf-preview { background: white; border: 1px solid #E5E7EB; border-radius: 8px; padding: 10px; margin-top: 10px; display: flex; align-items: center; gap: 10px; }
+    .pdf-icon { width: 30px; height: 30px; background: #DC2626; border-radius: 4px; display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 10px; }
+    .chat-nav { display: flex; justify-content: center; gap: 10px; margin-top: 20px; }
+    .chat-nav-btn { width: 10px; height: 10px; border-radius: 50%; background: var(--gray); border: none; cursor: pointer; transition: all 0.3s; }
+    .chat-nav-btn.active { background: var(--primary); width: 30px; border-radius: 5px; }
+
+    /* Sections */
+    section { padding: 5rem 2rem; max-width: 1200px; margin: 0 auto; }
+    .section-title { font-size: 2.5rem; text-align: center; margin-bottom: 3rem; color: var(--text-dark); }
+
+    /* Features (anim scroll + tilt) */
+    .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 2rem; margin-top: 3rem; }
+    .feature-card { background: var(--bg-beige); padding: 2rem; border-radius: 16px; box-shadow: 0 4px 20px rgba(152, 111, 86, 0.08); border: 1px solid rgba(152, 111, 86, 0.1); opacity: 0; transform: translateY(24px) scale(0.98); transition: transform 0.45s cubic-bezier(0.22,1,0.36,1), box-shadow 0.45s ease, opacity 0.45s ease, border-color 0.3s ease; will-change: transform, opacity; transform-style: preserve-3d; }
+    .feature-card.entered { opacity: 1; transform: translateY(0) scale(1); }
+    .feature-card:hover { transform: translateY(-10px) scale(1.02); box-shadow: 0 10px 40px rgba(152, 111, 86, 0.2); border-color: var(--primary-light); }
+    .feature-title { font-size: 1.25rem; margin-bottom: 0.5rem; color: var(--text-dark); }
+    .feature-description { color: var(--gray); line-height: 1.6; }
+
+    /* Benefits */
+    .benefits { background: linear-gradient(135deg, var(--bg-light) 0%, rgba(152, 111, 86, 0.03) 100%); }
+    .benefits-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 2rem; text-align: center; }
+    .benefit-item { opacity: 0; animation: fadeInUp 0.6s ease forwards; position: relative; }
+    .benefit-circle { width: 120px; height: 120px; margin: 0 auto 1rem; position: relative; }
+    .benefit-circle svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+    .benefit-circle-bg { fill: none; stroke: #e5e5e5; stroke-width: 8; }
+    .benefit-circle-progress { fill: none; stroke: var(--primary); stroke-width: 8; stroke-dasharray: 0 377; transition: stroke-dasharray 2s ease; stroke-linecap: round; }
+    .benefit-number { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 1.8rem; font-weight: bold; color: var(--primary); }
+    .benefit-label { font-size: 1.1rem; color: var(--text-dark); }
+
+    /* Process */
+    .process-section { position: relative; overflow: hidden; }
+    .particles-container { position: absolute; width: 100%; height: 100%; top: 0; left: 0; pointer-events: none; }
+    .particle { position: absolute; width: 6px; height: 6px; background: var(--primary-light); border-radius: 50%; opacity: 0.3; animation: float 15s infinite ease-in-out; }
+    @keyframes float { 0%, 100% { transform: translateY(0) translateX(0); } 25% { transform: translateY(-100px) translateX(50px); } 50% { transform: translateY(50px) translateX(-30px); } 75% { transform: translateY(-50px) translateX(-50px); } }
+    .process-steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 2rem; margin-top: 3rem; position: relative; z-index: 1; }
+    .step { text-align: center; position: relative; opacity: 0; animation: fadeInUp 0.6s ease forwards; }
+    .step-number { width: 60px; height: 60px; background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem; font-weight: bold; margin: 0 auto 1rem; box-shadow: 0 4px 15px rgba(152, 111, 86, 0.3); }
+
+    /* FAQ */
+    .faq { background: linear-gradient(135deg, rgba(152, 111, 86, 0.03) 0%, var(--bg-light) 100%); }
+    .faq-grid { display: grid; gap: 1.5rem; max-width: 800px; margin: 0 auto; }
+    .faq-item { background: var(--bg-beige); padding: 1.5rem; border-radius: 12px; box-shadow: 0 2px 10px rgba(152, 111, 86, 0.08); opacity: 0; animation: fadeInUp 0.6s ease forwards; border: 1px solid rgba(152, 111, 86, 0.1); }
+    .faq-question { font-weight: 600; color: var(--text-dark); margin-bottom: 0.75rem; font-size: 1.1rem; }
+    .faq-answer { color: var(--gray); line-height: 1.6; }
+
+    /* Guarantees (scroll dynamic + pulsation) */
+    .guarantees-section { position: relative; overflow: hidden; }
+    .guarantees-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3rem; margin-top: 3rem; position: relative; z-index: 2; }
+    .guarantee-item { text-align: center; opacity: 0; animation: fadeInUp 0.6s ease forwards; transform-style: preserve-3d; transition: transform .2s ease, filter .3s ease, opacity .3s ease; will-change: transform; }
+    .guarantee-item.visible { opacity: 1; }
+    .guarantee-item.is-active { transform: scale(1.06) translateY(-6px) rotateX(2deg) rotateY(-2deg); filter: drop-shadow(0 12px 22px rgba(0,0,0,.12)); }
+    .guarantee-icon { width: 90px; height: 90px; margin: 0 auto 1rem; position: relative; cursor: pointer; transition: transform 0.3s; }
+    .guarantee-icon svg { width: 100%; height: 100%; fill: var(--primary); filter: drop-shadow(0 6px 10px rgba(0,0,0,.1)); }
+    /* Pulsation sur TOUS les items visibles */
+    .guarantee-item.visible .guarantee-icon::after { content:''; position:absolute; inset:-6px; border-radius: 24px; border:2px solid rgba(152,111,86,.35); animation: pulseGlow 1.8s ease-out infinite; }
+    .guarantee-item.visible .guarantee-icon svg { animation: breathe 2.4s ease-in-out infinite; }
+    @keyframes pulseGlow { 0% { transform: scale(1); opacity:.55; } 70% { transform: scale(1.18); opacity:0; } 100% { transform: scale(1.18); opacity:0; } }
+    @keyframes breathe { 0%,100% { transform: scale(1); } 50% { transform: scale(1.06); } }
+    .scroll-progress { position: absolute; left: 50%; transform: translateX(-50%); bottom: -6px; height: 4px; width: 220px; background: rgba(0,0,0,.08); border-radius: 999px; overflow: hidden; }
+    .scroll-progress > span { display:block; height:100%; width:0%; background: linear-gradient(90deg, var(--primary-light), var(--primary)); transition: width .15s ease-out; }
+
+    /* Footer */
+    footer { background: linear-gradient(135deg, var(--accent) 0%, var(--primary-dark) 100%); color: white; padding: 3rem 2rem; text-align: center; margin-top: 3rem; }
+    .footer-content { max-width: 1200px; margin: 0 auto; }
+    .footer-cta { margin-bottom: 2rem; }
+    .footer-cta h2 { font-size: 2rem; margin-bottom: 1rem; }
+    .footer-links { display: flex; justify-content: center; gap: 2rem; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid rgba(255,255,255,0.2); }
+    .footer-links a { color: white; text-decoration: none; opacity: 0.8; transition: opacity 0.3s; }
+    .footer-links a:hover { opacity: 1; }
+    .copyright { margin-top: 2rem; opacity: 0.6; }
+
+    /* Animations génériques */
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* Responsive */
+    @media (max-width: 968px) { .benefits-grid { grid-template-columns: repeat(2, 1fr); gap: 2rem; } }
+    @media (max-width: 768px) {
+      nav { grid-template-columns: auto auto; }
+      .hero-content { grid-template-columns: 1fr; text-align: center; }
+      .hero-text h1 { font-size: 2rem; }
+      .phone-frame { width: 280px; height: 560px; }
+      .features-grid { grid-template-columns: 1fr; }
+      .guarantees-grid { grid-template-columns: repeat(2, 1fr); gap: 2rem; }
+      .process-steps { grid-template-columns: 1fr; gap: 2rem; }
+    }
+    @media (max-width: 480px) { .guarantees-grid { grid-template-columns: 1fr; gap: 1.5rem; } }
+
+    /* Intersection Observer (fade in) */
+    .fade-in-section { opacity: 0; transform: translateY(30px); transition: all 0.6s ease; }
+    .fade-in-section.visible { opacity: 1; transform: translateY(0); }
+
+    @media (prefers-reduced-motion: reduce){ *, *::before, *::after { animation: none !important; transition: none !important; } }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header id="header">
+    <nav>
+      <div class="brand">
+        <img src="https://github.com/Allan77bot/logo-artibot/blob/main/c7cebe3f-6170-4e29-8573-5037e7cf631f-Photoroom.png?raw=true" alt="Logo ArtiBot" class="logo" />
+      </div>
+      <div></div>
+      <a href="https://calendly.com/artibot/demo-gratuite-votre-solution-cle-en-main-en-direct" class="cta-button">Réserver une démo gratuite</a>
+    </nav>
+  </header>
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1>L'assistant qui gère tout à votre place</h1>
+        <p>Libérez-vous de la paperasse ! ArtiBot automatise vos devis, factures et relances par simple commande vocale. Concentrez-vous sur vos chantiers, on s'occupe du reste.</p>
+        <div class="hero-cta">
+          <a href="https://calendly.com/artibot/demo-gratuite-votre-solution-cle-en-main-en-direct" class="cta-button">Je réserve ma démo</a>
+        </div>
+      </div>
+
+      <div class="phone-mockup">
+        <div class="phone-frame" onclick="switchChat()">
+          <div class="phone-screen">
+            <div class="chat-header">ArtiBot Assistant</div>
+            <div class="chat-messages" id="chatContainer">
+              <!-- Chat 1 -->
+              <div class="chat-examples active" id="chat1">
+                <div class="message user-message">Créé moi un devis pour M. Dupont, rénovation salle de bain, 8500€</div>
+                <div class="message bot-message">Devis créé avec succès ! Voici le document :
+                  <div class="pdf-preview">
+                    <div class="pdf-icon">PDF</div>
+                    <div>
+                      <div style="font-weight: 600; font-size: 12px;">Devis_Dupont_2025.pdf</div>
+                      <div style="font-size: 11px; color: #6B7280;">Prêt à envoyer</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="message bot-message">Voulez-vous que je l'envoie par mail à M. Dupont ?</div>
+              </div>
+
+              <!-- Chat 2 -->
+              <div class="chat-examples" id="chat2">
+                <div class="message user-message">Brief quotidien</div>
+                <div class="message bot-message">📊 Brief 09/08/2025
+📄 Devis en attente : 1
+✨ Devis créés aujourd'hui : 2
+💰 Factures créées aujourd'hui : 3
+📧 Relances mail envoyées aujourd'hui : 5</div>
+              </div>
+
+              <!-- Chat 3 -->
+              <div class="chat-examples" id="chat3">
+                <div class="message user-message">Voici la facture de mon fournisseur
+                  <div class="pdf-preview" style="background: transparent; border: none; margin-top: 5px;">
+                    <div class="pdf-icon">PDF</div>
+                    <div><div style="font-weight: 600; font-size: 12px; color: white;">Facture_Leroy.pdf</div></div>
+                  </div>
+                </div>
+                <div class="message bot-message">La facture a bien été traitée pour un montant total de 733,45€</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="chat-nav">
+          <button class="chat-nav-btn active" onclick="showChat(1)"></button>
+          <button class="chat-nav-btn" onclick="showChat(2)"></button>
+          <button class="chat-nav-btn" onclick="showChat(3)"></button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section id="fonctionnalites" class="fade-in-section">
+    <h2 class="section-title">Tout ce dont vous avez besoin, rien de plus</h2>
+    <div class="features-grid">
+      <div class="feature-card">
+        <h3 class="feature-title">🗣 Parlez, ArtiBot s'occupe de tout</h3>
+        <p class="feature-description">Votre assistant vous écoute, comprend vos besoins et agit à votre place, sans que vous ayez à toucher à un seul bouton.</p>
+      </div>
+      <div class="feature-card">
+        <h3 class="feature-title">📄 Il prépare vos documents</h3>
+        <p class="feature-description">Vous lui dites "prépare un devis pour M. Dupont" → il le crée, le met en forme et l'envoie par e-mail.</p>
+      </div>
+      <div class="feature-card">
+        <h3 class="feature-title">🔔 Il veille à vos paiements</h3>
+        <p class="feature-description">Il repère les factures en retard et relance vos clients par SMS ou e-mail, avec un ton pro et courtois.</p>
+      </div>
+      <div class="feature-card">
+        <h3 class="feature-title">📅 Il organise vos journées</h3>
+        <p class="feature-description">Chaque matin, il vous envoie un brief clair : rendez-vous à venir, factures à envoyer, urgences du jour.</p>
+      </div>
+      <div class="feature-card">
+        <h3 class="feature-title">📥 Il trie vos e-mails</h3>
+        <p class="feature-description">Il lit vos mails entrants, détecte les demandes de devis, classe les factures reçues et prépare les réponses automatiques.</p>
+      </div>
+      <div class="feature-card">
+        <h3 class="feature-title">📊 Il prépare la compta</h3>
+        <p class="feature-description">En un clic, il exporte toutes vos données prêtes pour votre comptable, sans erreur ni oubli.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Benefits (avec 10 h gagnées) -->
+  <section id="benefices" class="benefits fade-in-section">
+    <h2 class="section-title">Les résultats parlent d'eux-mêmes</h2>
+    <div class="benefits-grid">
+      <div class="benefit-item">
+        <div class="benefit-circle">
+          <svg>
+            <circle cx="60" cy="60" r="50" class="benefit-circle-bg"></circle>
+            <circle cx="60" cy="60" r="50" class="benefit-circle-progress" data-value="100"></circle>
+          </svg>
+          <div class="benefit-number">24/7</div>
+        </div>
+        <div class="benefit-label">disponible jour et nuit</div>
+      </div>
+
+      <div class="benefit-item">
+        <div class="benefit-circle">
+          <svg>
+            <circle cx="60" cy="60" r="50" class="benefit-circle-bg"></circle>
+            <circle cx="60" cy="60" r="50" class="benefit-circle-progress" data-value="100"></circle>
+          </svg>
+          <div class="benefit-number">0</div>
+        </div>
+        <div class="benefit-label">courbe d'apprentissage</div>
+      </div>
+
+      <div class="benefit-item">
+        <div class="benefit-circle">
+          <svg>
+            <circle cx="60" cy="60" r="50" class="benefit-circle-bg"></circle>
+            <circle cx="60" cy="60" r="50" class="benefit-circle-progress" data-value="30"></circle>
+          </svg>
+          <div class="benefit-number" data-target="30">0%</div>
+        </div>
+        <div class="benefit-label">d'encaissement plus rapide</div>
+      </div>
+
+      <div class="benefit-item">
+        <div class="benefit-circle">
+          <svg>
+            <circle cx="60" cy="60" r="50" class="benefit-circle-bg"></circle>
+            <circle cx="60" cy="60" r="50" class="benefit-circle-progress" data-value="100"></circle>
+          </svg>
+          <div class="benefit-number" data-target="10">0h</div>
+        </div>
+        <div class="benefit-label">gagnées par semaine</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Process -->
+  <section class="process-section fade-in-section">
+    <div class="particles-container" id="particlesContainer"></div>
+    <h2 class="section-title">Commencez en 4 étapes simples</h2>
+    <div class="process-steps">
+      <div class="step"><div class="step-number">1</div><h3>Réservez votre démo</h3><p>15 minutes pour découvrir comment ArtiBot va transformer votre quotidien</p></div>
+      <div class="step"><div class="step-number">2</div><h3>Configuration rapide</h3><p>On paramètre ensemble vos modèles de documents en moins de 30 minutes</p></div>
+      <div class="step"><div class="step-number">3</div><h3>Formation express</h3><p>10 minutes suffisent pour maîtriser toutes les fonctionnalités</p></div>
+      <div class="step"><div class="step-number">4</div><h3>C'est parti !</h3><p>Profitez de votre nouveau temps libre pendant qu'ArtiBot travaille</p></div>
+    </div>
+    </div>
+  </section>
+
+  <!-- Guarantees -->
+  <section class="guarantees-section fade-in-section" id="guarantees">
+    <h2 class="section-title">Nos garanties</h2>
+    <div class="guarantees-grid">
+      <div class="guarantee-item" data-index="0">
+        <div class="guarantee-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+            <path d="M9 22V12h6v10" stroke="white" stroke-width="2" fill="none"/>
+          </svg>
+        </div>
+        <h3>Hébergé en France</h3>
+        <p>Vos données restent sur le territoire français, en toute sécurité</p>
+      </div>
+      <div class="guarantee-item" data-index="1">
+        <div class="guarantee-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z"/>
+            <path d="M12 11V7M12 15h.01" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+        <h3>100% conforme RGPD</h3>
+        <p>Protection maximale de vos données personnelles et celles de vos clients</p>
+      </div>
+      <div class="guarantee-item" data-index="2">
+        <div class="guarantee-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="12" cy="12" r="10"/>
+            <path d="M12 6v6l4 2" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/>
+          </svg>
+        </div>
+        <h3>Support 7j/7</h3>
+        <p>Une équipe dédiée pour répondre à toutes vos questions rapidement</p>
+      </div>
+      <div class="guarantee-item" data-index="3">
+        <div class="guarantee-icon">
+          <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/>
+            <path d="M9 11l2 2 4-4" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+          </svg>
+        </div>
+        <h3>Sans engagement</h3>
+        <p>Testez sans risque, résiliez quand vous voulez, sans frais cachés</p>
+      </div>
+    </div>
+    <div class="scroll-progress"><span></span></div>
+  </section>
+
+  <!-- Footer -->
+  <footer id="demo">
+    <div class="footer-content">
+      <div class="footer-cta">
+        <h2>Prêt à gagner 10 heures par semaine ?</h2>
+        <p>Rejoignez les artisans qui ont déjà simplifié leur quotidien</p>
+        <a href="#demo" class="cta-button" style="background: linear-gradient(135deg, white 0%, #f9f5f1 100%); color: var(--primary-dark); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">Réserver une démo gratuite</a>
+      </div>
+      <div class="footer-links">
+        <a href="#">Mentions légales</a>
+        <a href="#">CGU</a>
+        <a href="#">Politique de confidentialité</a>
+        <a href="#">Cookies</a>
+      </div>
+      <div class="copyright">© 2025 ArtiBot - Tous droits réservés</div>
+    </div>
+  </footer>
+
+  <script>
+    // Header scroll effect
+    window.addEventListener('scroll', function() {
+      const header = document.getElementById('header');
+      if (window.scrollY > 50) header.classList.add('scrolled');
+      else header.classList.remove('scrolled');
+    });
+
+    // Chat switching
+    let currentChat = 1;
+    function showChat(num) {
+      currentChat = num;
+      document.querySelectorAll('.chat-examples').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.chat-nav-btn').forEach(b => b.classList.remove('active'));
+      const wrap = document.getElementById('chat' + num);
+      wrap.classList.add('active');
+      document.querySelectorAll('.chat-nav-btn')[num - 1].classList.add('active');
+      const messages = wrap.querySelectorAll('.message');
+      messages.forEach((message, index) => { message.style.animationDelay = `${index * 0.5}s`; });
+    }
+    function switchChat() { currentChat = currentChat >= 3 ? 1 : currentChat + 1; showChat(currentChat); }
+
+    // Auto-animate chat on load
+    function startChatAnimation() {
+      const chat1Messages = document.querySelectorAll('#chat1 .message');
+      chat1Messages.forEach((message, index) => {
+        setTimeout(() => { message.style.opacity = '1'; message.style.transform = 'translateY(0)'; }, index * 800);
+      });
+    }
+    window.addEventListener('load', () => { setTimeout(startChatAnimation, 1000); });
+
+    // Create floating particles (process section)
+    function createParticles() {
+      const container = document.getElementById('particlesContainer');
+      if (container) {
+        for (let i = 0; i < 20; i++) {
+          const particle = document.createElement('div');
+          particle.className = 'particle';
+          particle.style.left = Math.random() * 100 + '%';
+          particle.style.top = Math.random() * 100 + '%';
+          particle.style.animationDelay = Math.random() * 15 + 's';
+          particle.style.animationDuration = (15 + Math.random() * 10) + 's';
+          container.appendChild(particle);
+        }
+      }
+    }
+    createParticles();
+
+    // Smooth scrolling (ignore empty # links)
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        const href = this.getAttribute('href');
+        if (!href || href === '#') return;
+        e.preventDefault();
+        const target = document.querySelector(href);
+        if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      });
+    });
+
+    // Intersection Observer for fade-in animations
+    const observerOptions = { threshold: 0.1, rootMargin: '0px 0px -50px 0px' };
+    const observer = new IntersectionObserver(function(entries){
+      entries.forEach(entry => {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          const children = entry.target.querySelectorAll('.feature-card, .benefit-item, .step, .faq-item, .guarantee-item');
+          children.forEach((child, index) => { child.style.animationDelay = `${index * 0.1}s`; });
+        }
+      });
+    }, observerOptions);
+    document.querySelectorAll('.fade-in-section').forEach(section => observer.observe(section));
+
+    // Animate circular progress bars & numbers
+    const progressObserver = new IntersectionObserver(function(entries){
+      entries.forEach(entry => {
+        if (entry.isIntersecting && !entry.target.classList.contains('animated')) {
+          entry.target.classList.add('animated');
+          const circles = entry.target.querySelectorAll('.benefit-circle-progress');
+          circles.forEach(circle => {
+            const value = circle.dataset.value;
+            const circumference = 2 * Math.PI * 50;
+            const offset = circumference - (value / 100) * circumference;
+            setTimeout(() => { circle.style.strokeDasharray = `${circumference - offset} ${circumference}`; }, 500);
+          });
+          const numbers = entry.target.querySelectorAll('.benefit-number[data-target]');
+          numbers.forEach(number => {
+            const target = parseInt(number.dataset.target);
+            const suffix = number.textContent.includes('h') ? 'h' : '%';
+            let current = 0; const increment = target / 50;
+            const timer = setInterval(() => {
+              current += increment;
+              if (current >= target) { number.textContent = target + suffix; clearInterval(timer); }
+              else { number.textContent = Math.floor(current) + suffix; }
+            }, 30);
+          });
+        }
+      });
+    }, { threshold: 0.5 });
+    const benefitsSection = document.querySelector('.benefits');
+    if (benefitsSection) progressObserver.observe(benefitsSection);
+
+    // Guarantees: scroll-driven animation + pulsation on all visible cards
+    (function(){
+      const section = document.getElementById('guarantees');
+      if (!section) return;
+      const progressEl = section.querySelector('.scroll-progress span');
+      const items = Array.from(section.querySelectorAll('.guarantee-item'));
+
+      const io = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{ if (e.isIntersecting) e.target.classList.add('visible'); });
+      },{threshold:.2});
+      items.forEach(i=>io.observe(i));
+
+      function clamp(v,min,max){ return Math.max(min, Math.min(max, v)); }
+
+      function onScroll(){
+        const rect = section.getBoundingClientRect();
+        const vh = window.innerHeight || 1;
+        const start = vh*0.15;
+        const end = rect.height - vh*0.2;
+        const sc = clamp((start - rect.top) / (end||1), 0, 1);
+        if (progressEl) progressEl.style.width = (sc*100).toFixed(1)+'%';
+
+        items.forEach((el, idx)=>{
+          const step = idx/(items.length-1 || 1);
+          const d = Math.abs(sc - step);
+          const scale = 1.06 - clamp(d*0.2, 0, 0.2);
+          const ty = -8 + (d*18);
+          const rx = (0.5 - step)*6 * (1 - d);
+          const ry = (step - 0.5)*6 * (1 - d);
+          el.style.transform = `translateY(${ty}px) scale(${scale}) rotateX(${rx}deg) rotateY(${ry}deg)`;
+          el.style.opacity = (1 - d*0.7).toFixed(2);
+          if (d < 0.18) el.classList.add('is-active'); else el.classList.remove('is-active');
+        });
+      }
+      let ticking = false;
+      window.addEventListener('scroll', ()=>{ if (!ticking){ window.requestAnimationFrame(()=>{ onScroll(); ticking=false; }); ticking=true; } }, {passive:true});
+      window.addEventListener('resize', ()=> onScroll());
+      onScroll();
+    })();
+
+    // Features: scroll-based parallax + reveal
+    (function(){
+      const sec = document.getElementById('fonctionnalites');
+      if (!sec) return;
+      const cards = Array.from(sec.querySelectorAll('.feature-card'));
+      const io = new IntersectionObserver((entries)=>{
+        entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('entered'); }});
+      }, {threshold: .15});
+      cards.forEach(c=>io.observe(c));
+
+      function onScroll(){
+        const vh = window.innerHeight || 1;
+        const vw = window.innerWidth || 1;
+        cards.forEach((el)=>{
+          const r = el.getBoundingClientRect();
+          const dy = (r.top + r.height/2) - vh/2;
+          const ty = dy / 18;
+          const tiltX = -(dy / vh) * 4;
+          const cx = (r.left + r.width/2) - vw/2;
+          const tiltY = (cx / vw) * 4;
+          el.style.transform = `translateY(${ty.toFixed(1)}px) rotateX(${tiltX.toFixed(2)}deg) rotateY(${tiltY.toFixed(2)}deg)`;
+        });
+      }
+      let ticking=false;
+      window.addEventListener('scroll', ()=>{ if (!ticking){ requestAnimationFrame(()=>{ onScroll(); ticking=false; }); ticking=true; } }, {passive:true});
+      window.addEventListener('resize', onScroll);
+      onScroll();
+    })();
+
+    // Parallax subtle effects for hero (Apple-like polish)
+    (function(){
+      const phone = document.querySelector('.phone-mockup');
+      const heroText = document.querySelector('.hero-text');
+      function onScroll(){
+        const y = window.scrollY || 0;
+        if (phone){ phone.style.transform = `translateY(${(y*0.04).toFixed(2)}px)`; }
+        if (heroText){ heroText.style.transform = `translateY(${(-y*0.02).toFixed(2)}px)`; }
+      }
+      window.addEventListener('scroll', onScroll, {passive:true});
+    })();
+  </script>
+</body>
+</html>
+  <section id="questions" class="faq fade-in-section">
+    <h2 class="section-title">Vos questions, nos réponses</h2>
+    <div class="faq-grid">
+      <div class="faq-item"><div class="faq-question">Je ne suis pas doué avec la technologie, c'est vraiment simple ?</div><div class="faq-answer">Absolument ! ArtiBot fonctionne par commande vocale, comme si vous parliez à un collègue. Dites "créé un devis pour M. Martin" et c'est fait. Pas de menus compliqués, pas de formations longues.</div></div>
+      <div class="faq-item"><div class="faq-question">Que se passe-t-il si l'IA se trompe dans un devis ?</div><div class="faq-answer">ArtiBot vous montre toujours un aperçu avant envoi. Vous pouvez modifier n'importe quel élément d'un simple clic ou par la voix. De plus, l'IA apprend de vos corrections pour être plus précise à chaque utilisation.</div></div>
+      <div class="faq-item"><div class="faq-question">Mes données clients sont-elles en sécurité ?</div><div class="faq-answer">Totalement. Vos données sont hébergées en France, cryptées et conformes au RGPD. Nous appliquons les mêmes standards de sécurité que les banques. Personne d'autre que vous n'y a accès.</div></div>
+      <div class="faq-item"><div class="faq-question">Puis-je personnaliser mes modèles de devis ?</div><div class="faq-answer">Bien sûr ! Utilisez vos propres modèles avec votre logo, vos conditions, vos tarifs. ArtiBot s'adapte à votre façon de travailler, pas l'inverse.</div></div>
+      <div class="faq-item"><div class="faq-question">Ça remplace complètement mon logiciel actuel ?</div><div class="faq-answer">ArtiBot peut fonctionner seul ou en complément de vos outils existants. Il s'intègre facilement et peut exporter vers la plupart des logiciels comptables du marché.</div></div>
+      <div class="faq-item"><div class="faq-question">Qui m'aide si je suis bloqué ?</div><div class="faq-answer">Notre équipe support est disponible 7j/7 par chat, téléphone ou visio. La plupart des questions sont résolues en moins de 5 minutes. On ne vous laisse jamais tomber.</div></div>
+      
+      
