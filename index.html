@@ -369,7 +369,7 @@
       <div class="footer-cta">
         <h2>Prêt à gagner 10 heures par semaine ?</h2>
         <p>Rejoignez les artisans qui ont déjà simplifié leur quotidien</p>
-        <a href="#demo" class="cta-button" style="background: linear-gradient(135deg, white 0%, #f9f5f1 100%); color: var(--primary-dark); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">Réserver une démo gratuite</a>
+        <a href="https://calendly.com/artibot/demo-gratuite-votre-solution-cle-en-main-en-direct" class="cta-button" style="background: linear-gradient(135deg, white 0%, #f9f5f1 100%); color: var(--primary-dark); box-shadow: 0 4px 15px rgba(0,0,0,0.2);">Réserver une démo gratuite</a>
       </div>
       <div class="footer-links">
         <a href="#">Mentions légales</a>
@@ -429,11 +429,11 @@
     }
     createParticles();
 
-    // Smooth scrolling (ignore empty # links)
+    // Smooth scrolling (ignore empty # links and Calendly links)
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       anchor.addEventListener('click', function(e) {
         const href = this.getAttribute('href');
-        if (!href || href === '#') return;
+        if (!href || href === '#' || href.includes('calendly.com')) return;
         e.preventDefault();
         const target = document.querySelector(href);
         if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -574,5 +574,3 @@
       <div class="faq-item"><div class="faq-question">Puis-je personnaliser mes modèles de devis ?</div><div class="faq-answer">Bien sûr ! Utilisez vos propres modèles avec votre logo, vos conditions, vos tarifs. ArtiBot s'adapte à votre façon de travailler, pas l'inverse.</div></div>
       <div class="faq-item"><div class="faq-question">Ça remplace complètement mon logiciel actuel ?</div><div class="faq-answer">ArtiBot peut fonctionner seul ou en complément de vos outils existants. Il s'intègre facilement et peut exporter vers la plupart des logiciels comptables du marché.</div></div>
       <div class="faq-item"><div class="faq-question">Qui m'aide si je suis bloqué ?</div><div class="faq-answer">Notre équipe support est disponible 7j/7 par chat, téléphone ou visio. La plupart des questions sont résolues en moins de 5 minutes. On ne vous laisse jamais tomber.</div></div>
-      
-      
